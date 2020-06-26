@@ -78,10 +78,15 @@ public class AuditSensor implements Sensor {
             InputFile inputFile = workspace.getInputFile(result.getKey());
             AssessmentReport report = result.getValue().report;
             double score = result.getValue().score;
+            double security_score = result.getValue().report.security != null ? result.getValue().report.security.score
+                    : 0;
+            double data_score = result.getValue().report.data != null ? result.getValue().report.data.score : 0;
             context.<Double>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(inputFile).save();
+            context.<Double>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(inputFile)
+                    .save();
+            context.<Double>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(inputFile).save();
 
             Mapping mapping = result.getValue().mapping;
-            System.out.println("r d: " + report.data + " r s: " + report.security);
             if (report.data != null && report.data.issues != null) {
                 for (Entry<String, Issue> entry : report.data.issues.entrySet()) {
                     Issue issue = entry.getValue();
