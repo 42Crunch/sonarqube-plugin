@@ -5,6 +5,6 @@ import org.sonar.api.measures.Metric;
 public class ComputeAuditScore extends ComputeScore {
     @Override
     Metric<Integer> getMetric() {
-        return AuditMetrics.DATA_SCORE;
+        return AuditMetrics.SCORE;
     }
 }

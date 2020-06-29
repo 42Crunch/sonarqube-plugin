@@ -6,6 +6,8 @@ import org.sonar.api.config.PropertyDefinition;
 import static java.util.Arrays.asList;
 
 public class AuditPlugin implements Plugin {
+    public static final String REPO_NAME = "Security Audit";
+    public static final String REPO_KEY = OpenApiLanguage.KEY + "-security-audit";
 
     @Override
     public void define(Context context) {

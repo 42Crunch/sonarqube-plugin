@@ -13,14 +13,13 @@ import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 
 public class AuditRulesDefinition implements RulesDefinition {
-    private static final String REPO_KEY = OpenApiLanguage.KEY + "-security-audit";
-    private static final String REPO_NAME = "Security Audit";
+
     private static final String PATH_TO_AUDIT_JSON = "/audit/audit.json";
     private static final Logger LOGGER = Loggers.get(AuditRulesDefinition.class);
 
     @Override
     public void define(Context context) {
-        defineRulesForLanguage(context, REPO_KEY, REPO_NAME, OpenApiLanguage.KEY);
+        defineRulesForLanguage(context, AuditPlugin.REPO_KEY, AuditPlugin.REPO_NAME, OpenApiLanguage.KEY);
     }
 
     private void defineRulesForLanguage(Context context, String repositoryKey, String repositoryName,
@@ -49,7 +48,7 @@ public class AuditRulesDefinition implements RulesDefinition {
                     ruleType = RuleType.BUG;
                 }
 
-                repository.createRule(RuleKey.of(REPO_KEY, id).rule()).setName(title).addTags(tags)
+                repository.createRule(RuleKey.of(AuditPlugin.REPO_KEY, id).rule()).setName(title).addTags(tags)
                         .setHtmlDescription(entry.getValue().getHtml()).setType(ruleType).setActivatedByDefault(true);
             }
 

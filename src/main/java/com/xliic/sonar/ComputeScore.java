@@ -16,15 +16,12 @@ public abstract class ComputeScore implements MeasureComputer {
     @Override
     public void compute(MeasureComputerContext context) {
         if (context.getComponent().getType() != Component.Type.FILE) {
-            computeMinForMetrics(context, AuditMetrics.SECURITY_SCORE);
+            int minScore = 100;
+            for (Measure child : context.getChildrenMeasures(getMetric().key())) {
+                minScore = minScore < child.getIntValue() ? minScore : child.getIntValue();
+            }
+            context.addMeasure(getMetric().key(), minScore);
         }
     }
 
-    void computeMinForMetrics(MeasureComputerContext context, Metric<Integer> metric) {
-        int minScore = 100;
-        for (Measure child : context.getChildrenMeasures(metric.key())) {
-            minScore = minScore < child.getIntValue() ? minScore : child.getIntValue();
-        }
-        context.addMeasure(metric.key(), minScore);
-    }
 }
