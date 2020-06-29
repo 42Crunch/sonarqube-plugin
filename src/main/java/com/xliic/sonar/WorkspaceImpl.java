@@ -25,7 +25,7 @@ public class WorkspaceImpl implements Workspace, OpenApiFinder {
     }
 
     @Override
-    public String[] find() throws AuditException, IOException, InterruptedException {
+    public String[] find() {
         return names.toArray(new String[0]);
     }
 

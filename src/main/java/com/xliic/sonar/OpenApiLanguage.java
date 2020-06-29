@@ -7,6 +7,9 @@ public class OpenApiLanguage extends AbstractLanguage {
     public static final String NAME = "OpenAPI";
     public static final String KEY = "openapi";
 
+    static final String FILE_SUFFIXES_KEY = "sonar.openapi.file.suffixes";
+    static final String FILE_SUFFIXES_DEFVALUE = ".json,.yaml,.yml";
+
     private final Configuration config;
 
     public OpenApiLanguage(Configuration config) {
@@ -16,6 +19,6 @@ public class OpenApiLanguage extends AbstractLanguage {
 
     @Override
     public String[] getFileSuffixes() {
-        return config.getStringArray(OpenApiLanguageProperties.FILE_SUFFIXES_KEY);
+        return config.getStringArray(FILE_SUFFIXES_KEY);
     }
 }

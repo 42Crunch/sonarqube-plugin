@@ -1,6 +1,7 @@
 package com.xliic.sonar;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import com.xliic.cicd.audit.AuditException;
 import com.xliic.cicd.audit.Auditor;
@@ -30,16 +31,15 @@ import org.sonar.api.utils.log.Loggers;
 public class AuditSensor implements Sensor {
 
     private WorkspaceImpl workspace;
-    private static final Logger LOGGER = Loggers.get(AuditRulesDefinition.class);
+    private static final Logger LOG = Loggers.get(AuditRulesDefinition.class);
 
     @Override
     public void describe(SensorDescriptor descriptor) {
         descriptor.name("REST API Static Security Testing");
     }
 
-    private ResultCollectorImpl audit(WorkspaceImpl workspace) {
+    private ResultCollectorImpl audit(WorkspaceImpl workspace, SecretImpl apiKey) {
         LoggerImpl logger = new LoggerImpl();
-        SecretImpl apiKey = new SecretImpl("851d8b6e-0584-4909-b5a8-a88528d8f81d");
         ResultCollectorImpl results = new ResultCollectorImpl();
         Auditor auditor = new Auditor(workspace, logger, apiKey);
         auditor.setResultCollector(results);
@@ -63,13 +63,14 @@ public class AuditSensor implements Sensor {
 
     @Override
     public void execute(SensorContext context) {
-        // TODO get extensions from properties
         FileSystem fs = context.fileSystem();
-        FilePredicate mainFilePredicate = fs.predicates().or(fs.predicates().hasExtension("yaml"),
-                fs.predicates().hasExtension("yml"), fs.predicates().hasExtension("json"));
+        FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
+                fs.predicates().hasLanguage(OpenApiLanguage.KEY));
 
         workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
-        ResultCollectorImpl results = audit(workspace);
+
+        Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
+        ResultCollectorImpl results = audit(workspace, new SecretImpl(token.get()));
 
         for (String filename : results.results.keySet()) {
             InputFile inputFile = workspace.getInputFile(filename);
@@ -113,7 +114,6 @@ public class AuditSensor implements Sensor {
             throws IOException, InterruptedException {
         Document document;
         Location location = mapping.find(pointer);
-        LOGGER.info("get line {} {}", pointer, file);
         if (location == null) {
             // issue in the main file
             if (file.filename().toLowerCase().endsWith(".json")) {
@@ -151,8 +151,6 @@ public class AuditSensor implements Sensor {
                 newIssue.forRule(ruleKey).at(primaryLocation);
                 newIssue.overrideSeverity(criticalityToSeverity(issue.criticality, defaultSeverity));
                 newIssue.save();
-                LOGGER.info("issue {} {}", issueId, issue.criticality);
-
             }
         }
     }
