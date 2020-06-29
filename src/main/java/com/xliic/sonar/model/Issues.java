@@ -1,11 +1,12 @@
 package com.xliic.sonar.model;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 
 public class Issues extends HashMap<String, Issues.Issue> {
+
+    private static final long serialVersionUID = 1L;
 
     @JsonAnySetter
     public void set(String id, Issue issue) {

@@ -77,14 +77,16 @@ public class AuditSensor implements Sensor {
         for (Entry<String, Result> result : results.results.entrySet()) {
             InputFile inputFile = workspace.getInputFile(result.getKey());
             AssessmentReport report = result.getValue().report;
-            double score = result.getValue().score;
-            double security_score = result.getValue().report.security != null ? result.getValue().report.security.score
+            int score = result.getValue().score;
+            int security_score = result.getValue().report.security != null
+                    ? Math.round(result.getValue().report.security.score)
                     : 0;
-            double data_score = result.getValue().report.data != null ? result.getValue().report.data.score : 0;
-            context.<Double>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(inputFile).save();
-            context.<Double>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(inputFile)
+            int data_score = result.getValue().report.data != null ? Math.round(result.getValue().report.data.score)
+                    : 0;
+            context.<Integer>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(inputFile).save();
+            context.<Integer>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(inputFile)
                     .save();
-            context.<Double>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(inputFile).save();
+            context.<Integer>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(inputFile).save();
 
             Mapping mapping = result.getValue().mapping;
             if (report.data != null && report.data.issues != null) {

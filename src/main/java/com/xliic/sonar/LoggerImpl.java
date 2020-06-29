@@ -13,6 +13,6 @@ class LoggerImpl implements Logger {
 
     @Override
     public void log(final String message) {
-        LOGGER.error(message);
+        LOGGER.info(message);
     }
 }
