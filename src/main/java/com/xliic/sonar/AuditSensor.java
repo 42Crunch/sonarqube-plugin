@@ -35,20 +35,16 @@ public class AuditSensor implements Sensor {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-        descriptor.name("REST API Static Security Testing");
+        descriptor.name("REST API Static Security Testing").onlyOnLanguage(OpenApiLanguage.KEY);
     }
 
-    private ResultCollectorImpl audit(WorkspaceImpl workspace, SecretImpl apiKey) {
+    private ResultCollectorImpl audit(WorkspaceImpl workspace, String collectionName, SecretImpl apiKey)
+            throws IOException, InterruptedException, AuditException {
         LoggerImpl logger = new LoggerImpl();
         ResultCollectorImpl results = new ResultCollectorImpl();
         Auditor auditor = new Auditor(workspace, logger, apiKey);
         auditor.setResultCollector(results);
-        try {
-            auditor.audit(workspace, "sq", 0);
-        } catch (IOException | InterruptedException | AuditException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        auditor.audit(workspace, collectionName, 0);
         return results;
     }
 
@@ -70,27 +66,47 @@ public class AuditSensor implements Sensor {
         workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
 
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
-        ResultCollectorImpl results = audit(workspace, new SecretImpl(token.get()));
+        Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
+        if (!token.isPresent()) {
+            throw new RuntimeException("API Token not found");
+        }
+
+        ResultCollectorImpl results;
+
+        try {
+            results = audit(workspace, collectionName.get(), new SecretImpl(token.get()));
+        } catch (IOException | InterruptedException | AuditException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
 
         for (String filename : results.results.keySet()) {
             InputFile inputFile = workspace.getInputFile(filename);
             Result result = results.get(filename);
+            String[] failures = result.failures;
             AssessmentReport report = result.report;
+            Mapping mapping = result.mapping;
 
-            saveMeasures(context, inputFile, result);
+            if (failures.length > 0) {
+                for (String failure : failures) {
+                    saveAuditErrorIssue(context, inputFile, failure);
+                }
+            }
 
-            try {
-                saveIssues(context, report.index, result.mapping, report.data, inputFile, Severity.MAJOR);
-                saveIssues(context, report.index, result.mapping, report.security, inputFile, Severity.MAJOR);
-                saveIssues(context, report.index, result.mapping, report.semanticErrors, inputFile, Severity.CRITICAL);
-                saveIssues(context, report.index, result.mapping, report.validationErrors, inputFile, Severity.BLOCKER);
-                saveIssues(context, report.index, result.mapping, report.warnings, inputFile, Severity.INFO);
-            } catch (IOException | InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            if (report != null) {
+                saveMeasures(context, inputFile, result);
+
+                try {
+                    saveIssues(context, report.index, mapping, report.data, inputFile, Severity.MAJOR);
+                    saveIssues(context, report.index, mapping, report.security, inputFile, Severity.MAJOR);
+                    saveIssues(context, report.index, mapping, report.semanticErrors, inputFile, Severity.CRITICAL);
+                    saveIssues(context, report.index, mapping, report.validationErrors, inputFile, Severity.BLOCKER);
+                    saveIssues(context, report.index, mapping, report.warnings, inputFile, Severity.INFO);
+                } catch (IOException | InterruptedException e) {
+                    saveAuditErrorIssue(context, inputFile, "Exception: " + e.getMessage());
+                }
             }
         }
-
     }
 
     private Severity criticalityToSeverity(int criticality, Severity defaultSeverity) {
@@ -140,6 +156,15 @@ public class AuditSensor implements Sensor {
         } else {
             return " (score impact less than 1)";
         }
+    }
+
+    private void saveAuditErrorIssue(SensorContext context, InputFile inputFile, String message) {
+        NewIssue newIssue = context.newIssue();
+        NewIssueLocation primaryLocation = newIssue.newLocation().message(message).on(inputFile);
+        RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY, "AuditError");
+        newIssue.forRule(ruleKey).at(primaryLocation);
+        newIssue.overrideSeverity(Severity.BLOCKER);
+        newIssue.save();
     }
 
     private void saveIssues(SensorContext context, String[] index, Mapping mapping, Section section,

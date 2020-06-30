@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xliic.sonar.model.Issues;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.rule.Severity;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 
@@ -51,6 +51,11 @@ public class AuditRulesDefinition implements RulesDefinition {
                 repository.createRule(RuleKey.of(AuditPlugin.REPO_KEY, id).rule()).setName(title).addTags(tags)
                         .setHtmlDescription(entry.getValue().getHtml()).setType(ruleType).setActivatedByDefault(true);
             }
+
+            // AuditError rule
+            repository.createRule(RuleKey.of(AuditPlugin.REPO_KEY, "AuditError").rule())
+                    .setName("Failed to perform Security Audit").setMarkdownDescription("Failed to run Security Audit")
+                    .setType(RuleType.BUG).setActivatedByDefault(true).setSeverity(Severity.BLOCKER);
 
             repository.done();
         } catch (IOException ex) {

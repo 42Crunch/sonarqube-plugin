@@ -29,6 +29,7 @@ public class OpenApiQualityProfile implements BuiltInQualityProfilesDefinition {
             for (Issues.Entry<String, Issues.Issue> entry : issues.entrySet()) {
                 profile.activateRule(AuditPlugin.REPO_KEY, entry.getKey());
             }
+            profile.activateRule(AuditPlugin.REPO_KEY, "AuditError");
             profile.done();
         } catch (IOException ex) {
             LOGGER.error("Failed to create OpenAPI Security Audit quality profile", ex);
