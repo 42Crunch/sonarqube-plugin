@@ -131,6 +131,17 @@ public class AuditSensor implements Sensor {
         }
     }
 
+    private String scoreImpact(float score) {
+        int rounded = Math.abs(Math.round(score));
+        if (score == 0) {
+            return "";
+        } else if (rounded >= 1) {
+            return String.format(" (score impact %d)", rounded);
+        } else {
+            return " (score impact less than 1)";
+        }
+    }
+
     private void saveIssues(SensorContext context, String[] index, Mapping mapping, Section section,
             InputFile inputFile, Severity defaultSeverity) throws IOException, InterruptedException {
         if (section == null || section.issues == null) {
@@ -142,11 +153,12 @@ public class AuditSensor implements Sensor {
             Issue issue = section.issues.get(id);
             for (SubIssue subIssue : issue.issues) {
                 int line = getLineByPointerIndex(inputFile, mapping, index[subIssue.pointer]);
+                String message = String.format("%s%s",
+                        subIssue.specificDescription != null ? subIssue.specificDescription : issue.description,
+                        scoreImpact(subIssue.score));
                 NewIssue newIssue = context.newIssue();
-                NewIssueLocation primaryLocation = newIssue.newLocation()
-                        .message(
-                                subIssue.specificDescription != null ? subIssue.specificDescription : issue.description)
-                        .on(inputFile).at(inputFile.selectLine(line));
+                NewIssueLocation primaryLocation = newIssue.newLocation().message(message).on(inputFile)
+                        .at(inputFile.selectLine(line));
                 RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY, issueId);
                 newIssue.forRule(ruleKey).at(primaryLocation);
                 newIssue.overrideSeverity(criticalityToSeverity(issue.criticality, defaultSeverity));
