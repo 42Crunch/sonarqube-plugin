@@ -1,6 +1,8 @@
 package com.xliic.sonar;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Iterator;
 import java.util.Optional;
 
 import com.xliic.cicd.audit.AuditException;
@@ -24,25 +26,56 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
+import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 public class AuditSensor implements Sensor {
 
-    private WorkspaceImpl workspace;
     private static final Logger LOG = Loggers.get(AuditRulesDefinition.class);
+    private static final int MAX_BATCH_SIZE = 25;
 
     @Override
     public void describe(SensorDescriptor descriptor) {
         descriptor.name("REST API Static Security Testing").onlyOnLanguage(OpenApiLanguage.KEY);
     }
 
-    private ResultCollectorImpl audit(WorkspaceImpl workspace, String collectionName, SecretImpl apiKey)
-            throws IOException, InterruptedException, AuditException {
+    @Override
+    public void execute(SensorContext context) {
+
+        Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
+        Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
+        if (!token.isPresent()) {
+            throw new RuntimeException("API Token not found");
+        }
+
+        FileSystem fs = context.fileSystem();
+        FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
+                fs.predicates().hasLanguage(OpenApiLanguage.KEY));
+
+        WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
+        Iterator<InputFile> workspaceFiles = workspace.getInputFiles();
+
+        try {
+            while (workspaceFiles.hasNext()) {
+                FinderImpl finder = new FinderImpl(workspaceFiles, MAX_BATCH_SIZE);
+                ResultCollectorImpl results = audit(workspace, finder, collectionName.get(),
+                        new SecretImpl(token.get()));
+                saveResults(context, workspace, results);
+            }
+        } catch (IOException | InterruptedException | AuditException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private ResultCollectorImpl audit(WorkspaceImpl workspace, FinderImpl finder, String collectionName,
+            SecretImpl apiKey) throws IOException, InterruptedException, AuditException {
         LoggerImpl logger = new LoggerImpl();
         ResultCollectorImpl results = new ResultCollectorImpl();
-        Auditor auditor = new Auditor(workspace, logger, apiKey);
+        Auditor auditor = new Auditor(finder, logger, apiKey);
         auditor.setResultCollector(results);
         auditor.audit(workspace, collectionName, 0);
         return results;
@@ -55,37 +88,19 @@ public class AuditSensor implements Sensor {
         context.<Integer>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(file).save();
+        context.<Integer>newMeasure().withValue(file.lines()).forMetric(CoreMetrics.NCLOC).on(file).save();
     }
 
-    @Override
-    public void execute(SensorContext context) {
-        FileSystem fs = context.fileSystem();
-        FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
-                fs.predicates().hasLanguage(OpenApiLanguage.KEY));
-
-        workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
-
-        Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
-        Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
-        if (!token.isPresent()) {
-            throw new RuntimeException("API Token not found");
-        }
-
-        ResultCollectorImpl results;
-
-        try {
-            results = audit(workspace, collectionName.get(), new SecretImpl(token.get()));
-        } catch (IOException | InterruptedException | AuditException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-
-        for (String filename : results.results.keySet()) {
-            InputFile inputFile = workspace.getInputFile(filename);
-            Result result = results.get(filename);
+    private void saveResults(SensorContext context, WorkspaceImpl workspace, ResultCollectorImpl results) {
+        for (URI file : results.results.keySet()) {
+            InputFile inputFile = workspace.getInputFile(file);
+            Result result = results.get(file);
             String[] failures = result.failures;
             AssessmentReport report = result.report;
             Mapping mapping = result.mapping;
+
+            LOG.info(String.format("Reporting to SonarQube security audit results for: %s",
+                    workspace.getInputFile(file)));
 
             if (failures.length > 0) {
                 for (String failure : failures) {
@@ -97,11 +112,13 @@ public class AuditSensor implements Sensor {
                 saveMeasures(context, inputFile, result);
 
                 try {
-                    saveIssues(context, report.index, mapping, report.data, inputFile, Severity.MAJOR);
-                    saveIssues(context, report.index, mapping, report.security, inputFile, Severity.MAJOR);
-                    saveIssues(context, report.index, mapping, report.semanticErrors, inputFile, Severity.CRITICAL);
-                    saveIssues(context, report.index, mapping, report.validationErrors, inputFile, Severity.BLOCKER);
-                    saveIssues(context, report.index, mapping, report.warnings, inputFile, Severity.INFO);
+                    saveIssues(context, workspace, report.index, mapping, report.data, inputFile, Severity.MAJOR);
+                    saveIssues(context, workspace, report.index, mapping, report.security, inputFile, Severity.MAJOR);
+                    saveIssues(context, workspace, report.index, mapping, report.semanticErrors, inputFile,
+                            Severity.CRITICAL);
+                    saveIssues(context, workspace, report.index, mapping, report.validationErrors, inputFile,
+                            Severity.BLOCKER);
+                    saveIssues(context, workspace, report.index, mapping, report.warnings, inputFile, Severity.INFO);
                 } catch (IOException | InterruptedException e) {
                     saveAuditErrorIssue(context, inputFile, "Exception: " + e.getMessage());
                 }
@@ -126,8 +143,8 @@ public class AuditSensor implements Sensor {
         }
     }
 
-    private int getLineByPointerIndex(InputFile file, Mapping mapping, String pointer)
-            throws IOException, InterruptedException {
+    private IssueLocation getLineByPointerIndex(InputFile file, WorkspaceImpl workspace, Mapping mapping,
+            String pointer) throws IOException, InterruptedException {
         Document document;
         Location location = mapping.find(pointer);
         if (location == null) {
@@ -137,13 +154,15 @@ public class AuditSensor implements Sensor {
             } else {
                 document = Parser.parseYaml(file.contents());
             }
-            return (int) document.getLine(pointer);
+            return new IssueLocation(null, file, (int) document.getLine(pointer));
         } else if (location.file.toLowerCase().endsWith(".json")) {
-            document = Parser.parseJson(workspace.read(location.file));
-            return (int) document.getLine(location.pointer);
+            URI issueFile = file.uri().resolve(location.file);
+            document = Parser.parseJson(workspace.read(issueFile));
+            return new IssueLocation(file, workspace.getInputFile(issueFile), (int) document.getLine(location.pointer));
         } else {
-            document = Parser.parseYaml(workspace.read(location.file));
-            return (int) document.getLine(location.pointer);
+            URI issueFile = file.uri().resolve(location.file);
+            document = Parser.parseYaml(workspace.read(issueFile));
+            return new IssueLocation(file, workspace.getInputFile(issueFile), (int) document.getLine(location.pointer));
         }
     }
 
@@ -167,8 +186,8 @@ public class AuditSensor implements Sensor {
         newIssue.save();
     }
 
-    private void saveIssues(SensorContext context, String[] index, Mapping mapping, Section section,
-            InputFile inputFile, Severity defaultSeverity) throws IOException, InterruptedException {
+    private void saveIssues(SensorContext context, WorkspaceImpl workspace, String[] index, Mapping mapping,
+            Section section, InputFile inputFile, Severity defaultSeverity) throws IOException, InterruptedException {
         if (section == null || section.issues == null) {
             return;
         }
@@ -177,18 +196,51 @@ public class AuditSensor implements Sensor {
             String issueId = id.toLowerCase().replace(".", "-");
             Issue issue = section.issues.get(id);
             for (SubIssue subIssue : issue.issues) {
-                int line = getLineByPointerIndex(inputFile, mapping, index[subIssue.pointer]);
+                // FIXME workarounds for bad line numbers and bad json pointers in assessment
+                IssueLocation location = new IssueLocation(null, inputFile, 1);
+                try {
+                    location = getLineByPointerIndex(inputFile, workspace, mapping, index[subIssue.pointer]);
+                    if (location.line == 0) {
+                        location.line = 1;
+                    }
+                } catch (Exception e) {
+                    LOG.debug("Failed to resolve a json pointer: {} {} {}", inputFile.filename(),
+                            index[subIssue.pointer], e);
+                }
+
                 String message = String.format("%s%s",
                         subIssue.specificDescription != null ? subIssue.specificDescription : issue.description,
                         scoreImpact(subIssue.score));
                 NewIssue newIssue = context.newIssue();
-                NewIssueLocation primaryLocation = newIssue.newLocation().message(message).on(inputFile)
-                        .at(inputFile.selectLine(line));
+                NewIssueLocation primaryLocation = newIssue.newLocation().message(message).on(location.file)
+                        .at(location.file.selectLine(location.line));
+
                 RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY, issueId);
                 newIssue.forRule(ruleKey).at(primaryLocation);
+
+                // FIXME need proper secondary location from mapping produced by bundler
+                // if (location.parent != null) {
+                // NewIssueLocation secondaryLocation =
+                // newIssue.newLocation().message(message).on(location.parent)
+                // .at(location.parent.selectLine(1/* location.parentLine */));
+                // newIssue.addLocation(secondaryLocation);
+                // }
+
                 newIssue.overrideSeverity(criticalityToSeverity(issue.criticality, defaultSeverity));
                 newIssue.save();
             }
+        }
+    }
+
+    static class IssueLocation {
+        InputFile parent;
+        InputFile file;
+        int line;
+
+        IssueLocation(InputFile parent, InputFile file, int line) {
+            this.parent = parent;
+            this.file = file;
+            this.line = line;
         }
     }
 

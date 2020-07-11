@@ -44,7 +44,7 @@ public class AuditPlugin implements Plugin {
                                 PropertyDefinition.builder(EXCLUSIONS_KEY).multiValues(true).name("OpenAPI exclusions")
                                                 .description("List of file path patterns to be excluded from analysis of OpenAPI files.")
                                                 .onQualifiers(Qualifiers.PROJECT).category("OpenAPI")
-                                                .defaultValue("**/node_modules/**,package.json,package-lock.json")
+                                                .defaultValue("**/node_modules/**,**/package.json,**/package-lock.json")
                                                 .build()
 
                 ));

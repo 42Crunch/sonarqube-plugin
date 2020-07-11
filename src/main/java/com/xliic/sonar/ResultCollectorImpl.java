@@ -1,5 +1,6 @@
 package com.xliic.sonar;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -8,19 +9,19 @@ import com.xliic.cicd.audit.model.assessment.AssessmentReport;
 import com.xliic.openapi.bundler.Mapping;
 
 class ResultCollectorImpl implements ResultCollector {
-    HashMap<String, Result> results = new HashMap<String, Result>();
+    HashMap<URI, Result> results = new HashMap<>();
 
     @Override
-    public void collect(String filename, int score, AssessmentReport report, Mapping mapping, String[] failures,
+    public void collect(URI file, int score, AssessmentReport report, Mapping mapping, String[] failures,
             String reportUrl) {
-        results.put(filename, new Result(score, report, mapping, failures, reportUrl));
+        results.put(file, new Result(score, report, mapping, failures, reportUrl));
     }
 
-    public Result get(String filename) {
-        return results.get(filename);
+    public Result get(URI file) {
+        return results.get(file);
     }
 
-    public Set<String> filenames() {
+    public Set<URI> filenames() {
         return results.keySet();
     }
 
