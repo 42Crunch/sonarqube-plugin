@@ -3,6 +3,7 @@ package com.xliic.sonar;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,13 +48,19 @@ public class WorkspaceImpl implements Workspace {
     @Override
     public URI resolve(String filename) {
         try {
-            ArrayList<String> encoded = new ArrayList<>();
-            for (Path segment : Paths.get(filename)) {
-                encoded.add(URLEncoder.encode(segment.toString(), "UTF-8"));
-            }
-            return fs.baseDir().toURI().resolve(String.join("/", encoded));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            String safeFilename = new URI(null, filename, null).getRawSchemeSpecificPart();
+            return fs.baseDir().toURI().resolve(safeFilename);
+        } catch (URISyntaxException e) {
+            throw (IllegalArgumentException) new IllegalArgumentException().initCause(e);
+        }
+    }
+
+    public URI resolve(URI base, String filename) {
+        try {
+            String safeFilename = new URI(null, filename, null).getRawSchemeSpecificPart();
+            return base.resolve(safeFilename);
+        } catch (URISyntaxException e) {
+            throw (IllegalArgumentException) new IllegalArgumentException().initCause(e);
         }
     }
 

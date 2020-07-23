@@ -2,6 +2,7 @@ package com.xliic.sonar;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -99,8 +100,7 @@ public class AuditSensor implements Sensor {
             AssessmentReport report = result.report;
             Mapping mapping = result.mapping;
 
-            LOG.info(String.format("Reporting to SonarQube security audit results for: %s",
-                    workspace.getInputFile(file)));
+            LOG.info(String.format("Reporting to SonarQube audit results for: %s", workspace.getInputFile(file)));
 
             if (failures.length > 0) {
                 for (String failure : failures) {
@@ -144,7 +144,7 @@ public class AuditSensor implements Sensor {
     }
 
     private IssueLocation getLineByPointerIndex(InputFile file, WorkspaceImpl workspace, Mapping mapping,
-            String pointer) throws IOException, InterruptedException {
+            String pointer) throws IOException, InterruptedException, URISyntaxException {
         Document document;
         Location location = mapping.find(pointer);
         if (location == null) {
@@ -156,11 +156,11 @@ public class AuditSensor implements Sensor {
             }
             return new IssueLocation(null, file, (int) document.getLine(pointer));
         } else if (location.file.toLowerCase().endsWith(".json")) {
-            URI issueFile = file.uri().resolve(location.file);
+            URI issueFile = workspace.resolve(file.uri(), location.file);
             document = Parser.parseJson(workspace.read(issueFile));
             return new IssueLocation(file, workspace.getInputFile(issueFile), (int) document.getLine(location.pointer));
         } else {
-            URI issueFile = file.uri().resolve(location.file);
+            URI issueFile = workspace.resolve(file.uri(), location.file);
             document = Parser.parseYaml(workspace.read(issueFile));
             return new IssueLocation(file, workspace.getInputFile(issueFile), (int) document.getLine(location.pointer));
         }
