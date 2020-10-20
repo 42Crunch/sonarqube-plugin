@@ -49,11 +49,11 @@ public class AuditSensor implements Sensor {
         Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
 
         if (!token.isPresent()) {
-            throw new RuntimeException("API Token is not configured");
+            throw new AnalysisException("API Token is not configured");
         }
 
         if (!collectionName.isPresent()) {
-            throw new RuntimeException("Collection name is not configured");
+            throw new AnalysisException("Collection name is not configured");
         }
 
         FileSystem fs = context.fileSystem();
@@ -72,7 +72,7 @@ public class AuditSensor implements Sensor {
             }
         } catch (IOException | InterruptedException | AuditException e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new AnalysisException("Unexpected exception", e);
         }
 
     }
@@ -241,4 +241,13 @@ public class AuditSensor implements Sensor {
         }
     }
 
+    static class AnalysisException extends RuntimeException {
+        AnalysisException(String message) {
+            super(message);
+        }
+
+        AnalysisException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 }
