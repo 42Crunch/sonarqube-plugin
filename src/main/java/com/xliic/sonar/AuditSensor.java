@@ -47,8 +47,13 @@ public class AuditSensor implements Sensor {
 
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
         Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
+
         if (!token.isPresent()) {
-            throw new RuntimeException("API Token not found");
+            throw new RuntimeException("API Token is not configured");
+        }
+
+        if (!collectionName.isPresent()) {
+            throw new RuntimeException("Collection name is not configured");
         }
 
         FileSystem fs = context.fileSystem();
