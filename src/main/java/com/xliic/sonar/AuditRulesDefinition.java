@@ -2,6 +2,7 @@ package com.xliic.sonar;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xliic.sonar.model.Issues;
@@ -32,7 +33,7 @@ public class AuditRulesDefinition implements RulesDefinition {
         try {
             Issues issues = mapper.readValue(auditJson, Issues.class);
 
-            for (Issues.Entry<String, Issues.Issue> entry : issues.entrySet()) {
+            for (Map.Entry<String, Issues.Issue> entry : issues.entrySet()) {
                 String id = entry.getKey();
                 Issues.Issue issue = entry.getValue();
                 String title = issue.title.text.replace("<h1>", "").replace("</h1>", "");

@@ -218,14 +218,6 @@ public class AuditSensor implements Sensor {
                 RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY, issueId);
                 newIssue.forRule(ruleKey).at(primaryLocation);
 
-                // FIXME need proper secondary location from mapping produced by bundler
-                // if (location.parent != null) {
-                // NewIssueLocation secondaryLocation =
-                // newIssue.newLocation().message(message).on(location.parent)
-                // .at(location.parent.selectLine(1/* location.parentLine */));
-                // newIssue.addLocation(secondaryLocation);
-                // }
-
                 newIssue.overrideSeverity(criticalityToSeverity(issue.criticality, defaultSeverity));
                 newIssue.save();
             }

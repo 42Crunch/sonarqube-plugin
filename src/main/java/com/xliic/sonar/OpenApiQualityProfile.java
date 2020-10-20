@@ -2,6 +2,7 @@ package com.xliic.sonar;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xliic.sonar.model.Issues;
@@ -26,7 +27,7 @@ public class OpenApiQualityProfile implements BuiltInQualityProfilesDefinition {
             ObjectMapper mapper = new ObjectMapper();
             Issues issues = mapper.readValue(auditJson, Issues.class);
 
-            for (Issues.Entry<String, Issues.Issue> entry : issues.entrySet()) {
+            for (Map.Entry<String, Issues.Issue> entry : issues.entrySet()) {
                 profile.activateRule(AuditPlugin.REPO_KEY, entry.getKey());
             }
             profile.activateRule(AuditPlugin.REPO_KEY, "AuditError");

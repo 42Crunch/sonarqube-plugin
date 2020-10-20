@@ -23,6 +23,7 @@ public class FinderImpl implements OpenApiFinder {
 
     @Override
     public void setPatterns(String[] patterns) {
+        // ignore set patterns, matching files provided by SQ
     }
 
     @Override
