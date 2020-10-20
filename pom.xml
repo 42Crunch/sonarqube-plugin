@@ -10,9 +10,16 @@
 
     <name>42Crunch REST API Static Security Testing</name>
     <description>
-    Performs API contract security audit to get a detailed analysis of the
-    possible vulnerabilities and other issues in the API contract.
-  </description>
+        Performs API contract security audit to get a detailed analysis of the
+        possible vulnerabilities and other issues in the API contract.
+    </description>
+
+    <licenses>
+        <license>
+            <name>AGPL v3 License</name>
+            <url>https://opensource.org/licenses/AGPL-3.0</url>
+        </license>
+    </licenses>
 
     <properties>
         <sonar.apiVersion>7.9</sonar.apiVersion>
