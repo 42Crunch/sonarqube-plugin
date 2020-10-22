@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
+import com.xliic.cicd.audit.config.ConfigReader;
 import com.xliic.common.Workspace;
 
 import org.sonar.api.batch.fs.FileSystem;
@@ -19,9 +20,11 @@ import org.sonar.api.batch.fs.InputFile;
 public class WorkspaceImpl implements Workspace {
     private FileSystem fs;
     private LinkedHashMap<URI, InputFile> files = new LinkedHashMap<>();
+    private URI config;
 
     public WorkspaceImpl(FileSystem fs, Iterable<InputFile> files) {
         this.fs = fs;
+        this.config = resolve(ConfigReader.CONFIG_FILE_NAME);
         for (InputFile file : files) {
             this.files.put(file.uri(), file);
         }
@@ -42,6 +45,9 @@ public class WorkspaceImpl implements Workspace {
 
     @Override
     public boolean exists(URI file) throws IOException, InterruptedException {
+        if (file.equals(config)) {
+            return false;
+        }
         return files.containsKey(file);
     }
 
