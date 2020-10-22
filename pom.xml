@@ -14,12 +14,39 @@
         possible vulnerabilities and other issues in the API contract.
     </description>
 
+    <organization>
+        <name>42Crunch</name>
+        <url>https://42crunch.com/</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <id>42crunch-team</id>
+            <name>42Crunch Team</name>
+            <organization>42Crunch</organization>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>AGPL v3 License</name>
             <url>https://opensource.org/licenses/AGPL-3.0</url>
         </license>
     </licenses>
+
+    <url>https://github.com/42Crunch/sonarqube-plugin/</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/42Crunch/sonarqube-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/42Crunch/sonarqube-plugin.git</developerConnection>
+        <url>http://github.com/42Crunch/sonarqube-plugin/tree/master</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/42Crunch/sonarqube-plugin/issues</url>
+    </issueManagement>
 
     <properties>
         <sonar.apiVersion>7.9</sonar.apiVersion>
@@ -81,7 +108,6 @@
                 <version>1.18.0.372</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- the entry-point class that extends org.sonar.api.SonarPlugin -->
                     <pluginClass>com.xliic.sonar.AuditPlugin</pluginClass>
                 </configuration>
             </plugin>
