@@ -52,6 +52,7 @@ public class AuditSensor implements Sensor {
 
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
         Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
+        Optional<String> platformUrl = context.config().get(AuditPlugin.PLATFORM_URL);
 
         if (!token.isPresent()) {
             throw new AnalysisException("API Token is not configured");
@@ -59,6 +60,10 @@ public class AuditSensor implements Sensor {
 
         if (!collectionName.isPresent()) {
             throw new AnalysisException("Collection name is not configured");
+        }
+
+        if (!platformUrl.isPresent()) {
+            throw new AnalysisException("42Crunch Platform URL is not configured");
         }
 
         FileSystem fs = context.fileSystem();
@@ -71,7 +76,7 @@ public class AuditSensor implements Sensor {
         try {
             while (workspaceFiles.hasNext()) {
                 FinderImpl finder = new FinderImpl(workspaceFiles, MAX_BATCH_SIZE);
-                ResultCollectorImpl results = audit(workspace, finder, collectionName.get(),
+                ResultCollectorImpl results = audit(workspace, finder, collectionName.get(), platformUrl.get(),
                         new SecretImpl(token.get()));
                 saveResults(context, workspace, results);
             }
@@ -83,10 +88,11 @@ public class AuditSensor implements Sensor {
     }
 
     private ResultCollectorImpl audit(WorkspaceImpl workspace, FinderImpl finder, String collectionName,
-            SecretImpl apiKey) throws IOException, InterruptedException, AuditException {
+            String platformUrl, SecretImpl apiKey) throws IOException, InterruptedException, AuditException {
         LoggerImpl logger = new LoggerImpl();
         ResultCollectorImpl results = new ResultCollectorImpl();
         Auditor auditor = new Auditor(finder, logger, apiKey);
+        auditor.setPlatformUrl(platformUrl);
         auditor.setResultCollector(results);
         auditor.audit(workspace, collectionName, 0);
         return results;

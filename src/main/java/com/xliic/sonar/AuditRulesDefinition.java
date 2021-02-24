@@ -20,7 +20,7 @@ import org.sonar.api.server.rule.RulesDefinition;
 
 public class AuditRulesDefinition implements RulesDefinition {
 
-    private static final String PATH_TO_AUDIT_JSON = "/audit/audit.json";
+    private static final String PATH_TO_AUDIT_JSON = "/audit/audit-with-yaml.json";
     private static final Logger LOGGER = Loggers.get(AuditRulesDefinition.class);
 
     @Override

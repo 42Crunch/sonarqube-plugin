@@ -47,9 +47,14 @@ public class Issues extends HashMap<String, Issues.Issue> {
         }
     }
 
+    public static class Code {
+        public String json;
+        public String yaml;
+    }
+
     public static class Text {
         public String text;
-        public String code;
+        public Code code;
     }
 
     public static class Sections {
@@ -61,8 +66,8 @@ public class Issues extends HashMap<String, Issues.Issue> {
                 if (section.text != null) {
                     builder.append(section.text);
                 }
-                if (section.code != null) {
-                    builder.append(section.code);
+                if (section.code != null && section.code.json != null) {
+                    builder.append(String.format("<pre><code>%s</code></pre>", section.code.json));
                 }
             }
             return builder.toString();

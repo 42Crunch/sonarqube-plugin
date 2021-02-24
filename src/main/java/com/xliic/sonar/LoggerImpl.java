@@ -17,17 +17,32 @@ class LoggerImpl implements Logger {
     }
 
     @Override
-    public void log(final String message) {
+    public void fatal(final String message) {
+        LOGGER.error(message);
+    }
+
+    @Override
+    public void error(final String message) {
+        LOGGER.error(message);
+    }
+
+    @Override
+    public void warn(final String message) {
+        LOGGER.warn(message);
+    }
+
+    @Override
+    public void info(final String message) {
         LOGGER.info(message);
     }
 
     @Override
-    public void progress(String message) {
-        LOGGER.info(message);
+    public void debug(final String message) {
+        LOGGER.debug(message);
     }
 
     @Override
-    public void report(String message) {
-        // do not print any report lines in SQ plugin
+    public void setLevel(int level) {
+        // ignore, use built in logging levels
     }
 }

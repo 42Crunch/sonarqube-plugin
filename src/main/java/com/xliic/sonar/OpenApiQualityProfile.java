@@ -18,7 +18,7 @@ import org.sonar.api.utils.log.Loggers;
 
 public class OpenApiQualityProfile implements BuiltInQualityProfilesDefinition {
 
-    private static final String PATH_TO_AUDIT_JSON = "/audit/audit.json";
+    private static final String PATH_TO_AUDIT_JSON = "/audit/audit-with-yaml.json";
     private static final Logger LOGGER = Loggers.get(OpenApiQualityProfile.class);
 
     @Override
