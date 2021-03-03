@@ -6,21 +6,18 @@
 package com.xliic.sonar;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xliic.sonar.model.Issues;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.Severity;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
+import com.xliic.sonar.model.Issues;
 
 public class AuditRulesDefinition implements RulesDefinition {
 
-    private static final String PATH_TO_AUDIT_JSON = "/audit/audit-with-yaml.json";
     private static final Logger LOGGER = Loggers.get(AuditRulesDefinition.class);
 
     @Override
@@ -30,13 +27,11 @@ public class AuditRulesDefinition implements RulesDefinition {
 
     private void defineRulesForLanguage(Context context, String repositoryKey, String repositoryName,
             String languageKey) {
-        InputStream auditJson = this.getClass().getResourceAsStream(PATH_TO_AUDIT_JSON);
 
         NewRepository repository = context.createRepository(repositoryKey, languageKey).setName(repositoryName);
 
-        ObjectMapper mapper = new ObjectMapper();
         try {
-            Issues issues = mapper.readValue(auditJson, Issues.class);
+            Issues issues = AuditKdb.loadIssues();
 
             for (Map.Entry<String, Issues.Issue> entry : issues.entrySet()) {
                 String id = entry.getKey();
@@ -61,6 +56,13 @@ public class AuditRulesDefinition implements RulesDefinition {
             // AuditError rule
             repository.createRule(RuleKey.of(AuditPlugin.REPO_KEY, "AuditError").rule())
                     .setName("Failed to perform Security Audit").setMarkdownDescription("Failed to run Security Audit")
+                    .setType(RuleType.BUG).setActivatedByDefault(true).setSeverity(Severity.BLOCKER);
+
+            // Missing Article rule
+            repository.createRule(RuleKey.of(AuditPlugin.REPO_KEY, "MissingArticle").rule())
+                    .setName("Failed to locate article")
+                    .setMarkdownDescription(
+                            "Whoops! Looks like there has been an oversight and we are missing a article for this issue. \n[Let us know](https://support.42crunch.com/) and we make sure to fix it.")
                     .setType(RuleType.BUG).setActivatedByDefault(true).setSeverity(Severity.BLOCKER);
 
             repository.done();

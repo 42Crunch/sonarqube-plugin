@@ -22,6 +22,7 @@ import com.xliic.openapi.bundler.Mapping.Location;
 import com.xliic.openapi.bundler.reverse.Document;
 import com.xliic.openapi.bundler.reverse.Parser;
 import com.xliic.sonar.ResultCollectorImpl.Result;
+import com.xliic.sonar.model.Issues;
 
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
@@ -128,13 +129,17 @@ public class AuditSensor implements Sensor {
                 saveMeasures(context, inputFile, result);
 
                 try {
-                    saveIssues(context, workspace, report.index, mapping, report.data, inputFile, Severity.MAJOR);
-                    saveIssues(context, workspace, report.index, mapping, report.security, inputFile, Severity.MAJOR);
-                    saveIssues(context, workspace, report.index, mapping, report.semanticErrors, inputFile,
+                    Issues issues = AuditKdb.loadIssues();
+                    saveIssues(context, workspace, issues, report.index, mapping, report.data, inputFile,
+                            Severity.MAJOR);
+                    saveIssues(context, workspace, issues, report.index, mapping, report.security, inputFile,
+                            Severity.MAJOR);
+                    saveIssues(context, workspace, issues, report.index, mapping, report.semanticErrors, inputFile,
                             Severity.CRITICAL);
-                    saveIssues(context, workspace, report.index, mapping, report.validationErrors, inputFile,
+                    saveIssues(context, workspace, issues, report.index, mapping, report.validationErrors, inputFile,
                             Severity.BLOCKER);
-                    saveIssues(context, workspace, report.index, mapping, report.warnings, inputFile, Severity.INFO);
+                    saveIssues(context, workspace, issues, report.index, mapping, report.warnings, inputFile,
+                            Severity.INFO);
                 } catch (IOException | InterruptedException e) {
                     saveAuditErrorIssue(context, inputFile, "Exception: " + e.getMessage());
                 }
@@ -202,15 +207,15 @@ public class AuditSensor implements Sensor {
         newIssue.save();
     }
 
-    private void saveIssues(SensorContext context, WorkspaceImpl workspace, String[] index, Mapping mapping,
-            Section section, InputFile inputFile, Severity defaultSeverity) throws IOException, InterruptedException {
+    private void saveIssues(SensorContext context, WorkspaceImpl workspace, Issues issues, String[] index,
+            Mapping mapping, Section section, InputFile inputFile, Severity defaultSeverity)
+            throws IOException, InterruptedException {
         if (section == null || section.issues == null) {
             return;
         }
 
-        for (String id : section.issues.keySet()) {
-            String issueId = id.toLowerCase().replace(".", "-");
-            Issue issue = section.issues.get(id);
+        for (String issueId : section.issues.keySet()) {
+            Issue issue = section.issues.get(issueId);
             for (SubIssue subIssue : issue.issues) {
                 // FIXME workarounds for bad line numbers and bad json pointers in assessment
                 IssueLocation location = new IssueLocation(null, inputFile, 1);
@@ -231,11 +236,14 @@ public class AuditSensor implements Sensor {
                 NewIssueLocation primaryLocation = newIssue.newLocation().message(message).on(location.file)
                         .at(location.file.selectLine(location.line));
 
-                RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY, issueId);
+                RuleKey ruleKey = RuleKey.of(AuditPlugin.REPO_KEY,
+                        issues.containsKey(issueId) ? issueId : "MissingArticle");
+
                 newIssue.forRule(ruleKey).at(primaryLocation);
 
                 newIssue.overrideSeverity(criticalityToSeverity(issue.criticality, defaultSeverity));
                 newIssue.save();
+
             }
         }
     }
