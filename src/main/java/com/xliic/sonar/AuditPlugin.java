@@ -40,7 +40,8 @@ public class AuditPlugin implements Plugin {
                                 PropertyDefinition.builder(COLLECTION_NAME).name("Collection name")
                                                 .type(PropertyType.STRING)
                                                 .description("The API collection where the discovered OpenAPI definitions are stored.")
-                                                .category(CATEGORY).defaultValue("SonarQube").build(),
+                                                .category(CATEGORY).defaultValue("SonarQube")
+                                                .onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(PLATFORM_URL).name("Platform URL").type(PropertyType.STRING)
                                                 .description("42Crunch Platform URL.").category(CATEGORY)
