@@ -20,6 +20,7 @@ public class AuditPlugin implements Plugin {
         public static final String API_TOKEN_KEY = "sonar.openapi.audit.api.token";
         public static final String COLLECTION_NAME = "sonar.openapi.audit.collection.name";
         public static final String PLATFORM_URL = "sonar.openapi.audit.platform.url";
+        public static final String DISABLE = "sonar.openapi.audit.disable";
         static final String CATEGORY = "OpenAPI";
 
         @Override
@@ -46,6 +47,11 @@ public class AuditPlugin implements Plugin {
                                 PropertyDefinition.builder(PLATFORM_URL).name("Platform URL").type(PropertyType.STRING)
                                                 .description("42Crunch Platform URL.").category(CATEGORY)
                                                 .defaultValue("https://platform.42crunch.com").build(),
+
+                                PropertyDefinition.builder(DISABLE).name("Disable audit").type(PropertyType.BOOLEAN)
+                                                .description("Disable API Contract Security Audit (use to conditionally disable audit on per-project basis)")
+                                                .category(CATEGORY).defaultValue("false")
+                                                .onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(EXCLUSIONS_KEY).multiValues(true).name("Excluded filepaths")
                                                 .description("A list of directories and file paths.")

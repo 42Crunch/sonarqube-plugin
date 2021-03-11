@@ -54,6 +54,12 @@ public class AuditSensor implements Sensor {
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
         Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
         Optional<String> platformUrl = context.config().get(AuditPlugin.PLATFORM_URL);
+        Optional<Boolean> disable = context.config().getBoolean(AuditPlugin.DISABLE);
+
+        if (disable.isPresent() && disable.get()) {
+            LOG.info("API Contract Security Audit is disabled");
+            return;
+        }
 
         if (!token.isPresent()) {
             throw new AnalysisException("API Token is not configured");
@@ -149,18 +155,18 @@ public class AuditSensor implements Sensor {
 
     private Severity criticalityToSeverity(int criticality, Severity defaultSeverity) {
         switch (criticality) {
-            case 1:
-                return Severity.INFO;
-            case 2:
-                return Severity.MINOR;
-            case 3:
-                return Severity.MAJOR;
-            case 4:
-                return Severity.CRITICAL;
-            case 5:
-                return Severity.BLOCKER;
-            default:
-                return defaultSeverity;
+        case 1:
+            return Severity.INFO;
+        case 2:
+            return Severity.MINOR;
+        case 3:
+            return Severity.MAJOR;
+        case 4:
+            return Severity.CRITICAL;
+        case 5:
+            return Severity.BLOCKER;
+        default:
+            return defaultSeverity;
         }
     }
 
