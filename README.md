@@ -4,20 +4,24 @@ The plugin is powered by 42Crunch [API Contract Security Audit](https://docs.42c
 
 API contracts must follow the OpenAPI Specification (OAS) (formely Swagger). Both OAS v2 and v3, and both JSON and YAML formats are supported.
 
-You can create a free 42Crunch account at https://platform.42crunch.com/register, and then configure the plugin.
+You can create a free 42Crunch account at https://platform.42crunch.com/register, and then configure the plugin as described below.
 
 ## Installation and configuration
 
-Please see the [documentation](https://docs.42crunch.com/latest/content/tasks/integrate_sonarqube.htm)
+1. Download the latest version of the plugin [from this repository](https://github.com/42Crunch/sonarqube-plugin/tags).
+
+2. Put the JAR file into SonarQube's \extensions\plugins folder.
+
+3. Follow the configuration instructions from our [documentation](https://docs.42crunch.com/latest/content/tasks/integrate_sonarqube.htm)
 
 ## Support
 
 If you run into an issue, or have a question not answered here, you can create a support ticket at [support.42crunch.com](https://support.42crunch.com/), or ask your questions on the Q&A tab here.
 
-The pipe is maintained by support@42crunch.com.
+This plugin is maintained by support@42crunch.com.
 
 If you’re reporting an issue, please include:
 
-- the version of the pipe
-- relevant logs and error messages
-- steps to reproduce
+- the version of the plugin
+- relevant logs, error messages, and screenshots
+- steps to reproduce the issue
