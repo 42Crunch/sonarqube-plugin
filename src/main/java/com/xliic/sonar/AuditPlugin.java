@@ -36,7 +36,7 @@ public class AuditPlugin implements Plugin {
 
                                 PropertyDefinition.builder(API_TOKEN_KEY).name("API token").type(PropertyType.PASSWORD)
                                                 .description("The API token that the plugin uses to authenticate to API Contract Security Audit.")
-                                                .category(CATEGORY).build(),
+                                                .category(CATEGORY).onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(COLLECTION_NAME).name("Collection name")
                                                 .type(PropertyType.STRING)
