@@ -8,7 +8,7 @@ You can create a free 42Crunch account at https://platform.42crunch.com/register
 
 ## Installation and configuration
 
-1. Download the latest version of the plugin [from this repository](https://github.com/42Crunch/sonarqube-plugin/tags).
+1. Download the latest version of the plugin [from this repository](https://github.com/42Crunch/sonarqube-plugin/releases).
 
 2. Put the JAR file into SonarQube's \extensions\plugins folder.
 
