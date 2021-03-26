@@ -18,7 +18,6 @@ public class AuditPlugin implements Plugin {
 
         public static final String EXCLUSIONS_KEY = "sonar.openapi.audit.exclusions";
         public static final String API_TOKEN_KEY = "sonar.openapi.audit.api.token";
-        public static final String COLLECTION_NAME = "sonar.openapi.audit.collection.name";
         public static final String PLATFORM_URL = "sonar.openapi.audit.platform.url";
         public static final String DISABLE = "sonar.openapi.audit.disable";
         static final String CATEGORY = "OpenAPI";
@@ -37,12 +36,6 @@ public class AuditPlugin implements Plugin {
                                 PropertyDefinition.builder(API_TOKEN_KEY).name("API token").type(PropertyType.PASSWORD)
                                                 .description("The API token that the plugin uses to authenticate to API Contract Security Audit.")
                                                 .category(CATEGORY).onQualifiers(Qualifiers.PROJECT).build(),
-
-                                PropertyDefinition.builder(COLLECTION_NAME).name("Collection name")
-                                                .type(PropertyType.STRING)
-                                                .description("The API collection where the discovered OpenAPI definitions are stored.")
-                                                .category(CATEGORY).defaultValue("SonarQube")
-                                                .onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(PLATFORM_URL).name("Platform URL").type(PropertyType.STRING)
                                                 .description("42Crunch Platform URL.").category(CATEGORY)

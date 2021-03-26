@@ -10,9 +10,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.xliic.cicd.audit.AuditException;
 import com.xliic.cicd.audit.Auditor;
+import com.xliic.cicd.audit.client.Client;
+import com.xliic.cicd.audit.model.api.Maybe;
 import com.xliic.cicd.audit.model.assessment.AssessmentReport;
 import com.xliic.cicd.audit.model.assessment.AssessmentReport.Issue;
 import com.xliic.cicd.audit.model.assessment.AssessmentReport.Section;
@@ -52,7 +55,6 @@ public class AuditSensor implements Sensor {
     public void execute(SensorContext context) {
 
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
-        Optional<String> collectionName = context.config().get(AuditPlugin.COLLECTION_NAME);
         Optional<String> platformUrl = context.config().get(AuditPlugin.PLATFORM_URL);
         Optional<Boolean> disable = context.config().getBoolean(AuditPlugin.DISABLE);
 
@@ -63,10 +65,6 @@ public class AuditSensor implements Sensor {
 
         if (!token.isPresent()) {
             throw new AnalysisException("API Token is not configured");
-        }
-
-        if (!collectionName.isPresent()) {
-            throw new AnalysisException("Collection name is not configured");
         }
 
         if (!platformUrl.isPresent()) {
@@ -83,8 +81,7 @@ public class AuditSensor implements Sensor {
         try {
             while (workspaceFiles.hasNext()) {
                 FinderImpl finder = new FinderImpl(workspaceFiles, MAX_BATCH_SIZE);
-                ResultCollectorImpl results = audit(workspace, finder, collectionName.get(), platformUrl.get(),
-                        new SecretImpl(token.get()));
+                ResultCollectorImpl results = audit(workspace, finder, platformUrl.get(), new SecretImpl(token.get()));
                 saveResults(context, workspace, results);
             }
         } catch (IOException | InterruptedException | AuditException e) {
@@ -94,14 +91,25 @@ public class AuditSensor implements Sensor {
 
     }
 
-    private ResultCollectorImpl audit(WorkspaceImpl workspace, FinderImpl finder, String collectionName,
-            String platformUrl, SecretImpl apiKey) throws IOException, InterruptedException, AuditException {
+    private ResultCollectorImpl audit(WorkspaceImpl workspace, FinderImpl finder, String platformUrl, SecretImpl apiKey)
+            throws IOException, InterruptedException, AuditException {
+        // temporary collection name
+        String collectionName = String.format("SonarQube %s", UUID.randomUUID());
         LoggerImpl logger = new LoggerImpl();
         ResultCollectorImpl results = new ResultCollectorImpl();
         Auditor auditor = new Auditor(finder, logger, apiKey);
         auditor.setPlatformUrl(platformUrl);
         auditor.setResultCollector(results);
         auditor.audit(workspace, collectionName, 0);
+        // when done, remove the temporary collection
+        String collectionId = auditor.getCollectionId();
+        if (collectionId != null) {
+            Maybe<String> deleted = Client.deleteCollection(collectionId, apiKey, logger);
+            if (deleted.isError()) {
+                throw new AuditException(String.format("Unable to delete temporary collection '%s' id '%s': %s",
+                        collectionName, collectionId, deleted.getError().getMessage()));
+            }
+        }
         return results;
     }
 
