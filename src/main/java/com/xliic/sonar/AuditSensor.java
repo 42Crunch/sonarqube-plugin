@@ -48,7 +48,7 @@ public class AuditSensor implements Sensor {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-        descriptor.name("REST API Static Security Testing").onlyOnLanguage(OpenApiLanguage.KEY);
+        descriptor.name("REST API Static Security Testing").onlyOnLanguage(AuditPlugin.LANGUAGE_YAML);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class AuditSensor implements Sensor {
 
         FileSystem fs = context.fileSystem();
         FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
-                fs.predicates().hasLanguage(OpenApiLanguage.KEY));
+                fs.predicates().hasLanguage(AuditPlugin.LANGUAGE_YAML));
 
         WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
         Iterator<InputFile> workspaceFiles = workspace.getInputFiles();
@@ -120,7 +120,6 @@ public class AuditSensor implements Sensor {
         context.<Integer>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(file).save();
-        context.<Integer>newMeasure().withValue(file.lines()).forMetric(CoreMetrics.NCLOC).on(file).save();
     }
 
     private void saveResults(SensorContext context, WorkspaceImpl workspace, ResultCollectorImpl results) {

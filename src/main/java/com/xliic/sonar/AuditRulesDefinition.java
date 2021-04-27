@@ -22,7 +22,7 @@ public class AuditRulesDefinition implements RulesDefinition {
 
     @Override
     public void define(Context context) {
-        defineRulesForLanguage(context, AuditPlugin.REPO_KEY, AuditPlugin.REPO_NAME, OpenApiLanguage.KEY);
+        defineRulesForLanguage(context, AuditPlugin.REPO_KEY, AuditPlugin.REPO_NAME, AuditPlugin.LANGUAGE_YAML);
     }
 
     private void defineRulesForLanguage(Context context, String repositoryKey, String repositoryName,

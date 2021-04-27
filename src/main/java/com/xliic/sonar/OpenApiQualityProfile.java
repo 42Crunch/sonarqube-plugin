@@ -25,8 +25,7 @@ public class OpenApiQualityProfile implements BuiltInQualityProfilesDefinition {
     public void define(Context context) {
         try {
             NewBuiltInQualityProfile profile = context.createBuiltInQualityProfile("OpenAPI Security Audit",
-                    OpenApiLanguage.KEY);
-            profile.setDefault(true);
+                    AuditPlugin.LANGUAGE_YAML);
 
             InputStream auditJson = this.getClass().getResourceAsStream(PATH_TO_AUDIT_JSON);
             ObjectMapper mapper = new ObjectMapper();
