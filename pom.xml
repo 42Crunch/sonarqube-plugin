@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.xliic</groupId>
     <artifactId>sonar-42crunch-plugin</artifactId>
-    <version>1.6-YAML</version>
+    <version>1.6.1-YAML</version>
 
     <packaging>sonar-plugin</packaging>
 
