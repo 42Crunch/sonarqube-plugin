@@ -23,8 +23,6 @@ public class AuditPlugin implements Plugin {
 
         @Override
         public void define(Context context) {
-                context.addExtension(OpenApiLanguage.class);
-
                 context.addExtensions(OpenApiLanguage.class, OpenApiQualityProfile.class);
 
                 context.addExtensions(AuditMetrics.class, ComputeAuditScore.class, ComputeAuditSecurityScore.class,
