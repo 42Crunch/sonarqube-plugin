@@ -8,7 +8,9 @@ package com.xliic.sonar;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,7 +38,6 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -48,7 +49,7 @@ public class AuditSensor implements Sensor {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-        descriptor.name("REST API Static Security Testing").onlyOnLanguage(AuditPlugin.LANGUAGE_YAML);
+        descriptor.name("REST API Static Security Testing");
     }
 
     @Override
@@ -59,7 +60,7 @@ public class AuditSensor implements Sensor {
         Optional<Boolean> disable = context.config().getBoolean(AuditPlugin.DISABLE);
 
         if (disable.isPresent() && disable.get()) {
-            LOG.info("API Contract Security Audit is disabled");
+            LOG.info("API Security Audit is disabled");
             return;
         }
 
@@ -73,9 +74,20 @@ public class AuditSensor implements Sensor {
 
         FileSystem fs = context.fileSystem();
         FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
-                fs.predicates().hasLanguage(AuditPlugin.LANGUAGE_YAML));
+                fs.predicates().hasExtension("yml"));
+        //.hasLanguage(AuditPlugin.LANGUAGE_YAML));
 
-        WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
+        FilePredicate filesPredicate = fs.predicates().matchesPathPattern("**/*.yaml");
+
+        /*
+        List<InputFile> inputFiles = new ArrayList<>();
+        fs.inputFiles(filesPredicate).forEach(inputFile1 -> {
+            context.markForPublishing(inputFile1);
+            inputFiles.add(inputFile1);
+        });
+        */
+
+        WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(filesPredicate));
         Iterator<InputFile> workspaceFiles = workspace.getInputFiles();
 
         try {
@@ -162,18 +174,18 @@ public class AuditSensor implements Sensor {
 
     private Severity criticalityToSeverity(int criticality, Severity defaultSeverity) {
         switch (criticality) {
-        case 1:
-            return Severity.INFO;
-        case 2:
-            return Severity.MINOR;
-        case 3:
-            return Severity.MAJOR;
-        case 4:
-            return Severity.CRITICAL;
-        case 5:
-            return Severity.BLOCKER;
-        default:
-            return defaultSeverity;
+            case 1:
+                return Severity.INFO;
+            case 2:
+                return Severity.MINOR;
+            case 3:
+                return Severity.MAJOR;
+            case 4:
+                return Severity.CRITICAL;
+            case 5:
+                return Severity.BLOCKER;
+            default:
+                return defaultSeverity;
         }
     }
 
