@@ -15,7 +15,7 @@ import static java.util.Arrays.asList;
 public class AuditPlugin implements Plugin {
         public static final String REPO_NAME = "Security Audit";
         public static final String REPO_KEY = "42crunch-security-audit";
-        public static final String LANGUAGE_YAML = "yaml";
+        public static final String LANGUAGE_YAML = "openapi";
 
         public static final String EXCLUSIONS_KEY = "sonar.openapi.audit.exclusions";
         public static final String API_TOKEN_KEY = "sonar.openapi.audit.api.token";
@@ -25,6 +25,7 @@ public class AuditPlugin implements Plugin {
 
         @Override
         public void define(Context context) {
+                context.addExtension(OpenApiLanguage.class);
 
                 context.addExtensions(OpenApiQualityProfile.class, AuditMetrics.class, ComputeAuditScore.class,
                                 ComputeAuditSecurityScore.class, ComputeAuditDataScore.class,
@@ -33,20 +34,21 @@ public class AuditPlugin implements Plugin {
                 context.addExtensions(asList(
 
                                 PropertyDefinition.builder(API_TOKEN_KEY).name("API token").type(PropertyType.PASSWORD)
-                                                .description("The API token that the plugin uses to authenticate to API Contract Security Audit.")
+                                                .description("The API token that the plugin uses to authenticate to API Security Audit")
                                                 .category(CATEGORY).onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(PLATFORM_URL).name("Platform URL").type(PropertyType.STRING)
-                                                .description("42Crunch Platform URL.").category(CATEGORY)
-                                                .defaultValue("https://platform.42crunch.com").build(),
+                                                .description("The URL where you access 42Crunch Platform")
+                                                .category(CATEGORY).defaultValue("https://platform.42crunch.com")
+                                                .build(),
 
-                                PropertyDefinition.builder(DISABLE).name("Disable audit").type(PropertyType.BOOLEAN)
-                                                .description("Disable API Contract Security Audit (use to conditionally disable audit on per-project basis)")
+                                PropertyDefinition.builder(DISABLE).name("Switch audit off").type(PropertyType.BOOLEAN)
+                                                .description("Conditionally switch Security Audit off on per-project basis")
                                                 .category(CATEGORY).defaultValue("false")
                                                 .onQualifiers(Qualifiers.PROJECT).build(),
 
                                 PropertyDefinition.builder(EXCLUSIONS_KEY).multiValues(true).name("Excluded filepaths")
-                                                .description("A list of directories and file paths.")
+                                                .description("A list of directories and filepaths to be excluded from the audit")
                                                 .onQualifiers(Qualifiers.PROJECT).category(CATEGORY)
                                                 .defaultValue("**/node_modules/**,**/package.json,**/package-lock.json")
                                                 .build()
