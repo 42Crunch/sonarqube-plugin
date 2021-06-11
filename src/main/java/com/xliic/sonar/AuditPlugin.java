@@ -12,6 +12,18 @@ import org.sonar.api.resources.Qualifiers;
 
 import static java.util.Arrays.asList;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+import com.xliic.sonar.json.JsonLanguage;
+import com.xliic.sonar.json.JsonQualityProfile;
+import com.xliic.sonar.json.JsonSensor;
+import com.xliic.sonar.yaml.YamlLanguage;
+import com.xliic.sonar.yaml.YamlQualityProfile;
+import com.xliic.sonar.yaml.YamlSensor;
+
 public class AuditPlugin implements Plugin {
         public static final String REPO_NAME = "Security Audit";
         public static final String REPO_KEY = OpenApiLanguage.KEY + "-security-audit";
@@ -21,13 +33,24 @@ public class AuditPlugin implements Plugin {
         public static final String DISABLE = "sonar.openapi.audit.disable";
         static final String CATEGORY = "OpenAPI";
 
+        private static final String XLIIC_SETTINGS_LANGUAGES = "/xliic/settings/languages";
+
         @Override
         public void define(Context context) {
+
+                boolean loadAllLanguages = false;
+                try {
+                        loadAllLanguages = new BufferedReader(new InputStreamReader(
+                                        this.getClass().getResourceAsStream(XLIIC_SETTINGS_LANGUAGES),
+                                        StandardCharsets.UTF_8)).readLine().contains("all");
+                } catch (IOException e) {
+                        // ignore
+                }
+
                 context.addExtensions(OpenApiLanguage.class, OpenApiQualityProfile.class);
 
                 context.addExtensions(AuditMetrics.class, ComputeAuditScore.class, ComputeAuditSecurityScore.class,
-                                ComputeAuditDataScore.class, AuditRulesDefinition.class, AuditSensor.class,
-                                OpenApiExclusionsFileFilter.class);
+                                ComputeAuditDataScore.class, AuditRulesDefinition.class, AuditSensor.class);
 
                 context.addExtensions(asList(
 
@@ -59,5 +82,9 @@ public class AuditPlugin implements Plugin {
 
                 ));
 
+                if (loadAllLanguages) {
+                        context.addExtensions(YamlLanguage.class, YamlQualityProfile.class, YamlSensor.class);
+                        context.addExtensions(JsonLanguage.class, JsonQualityProfile.class, JsonSensor.class);
+                }
         }
 }

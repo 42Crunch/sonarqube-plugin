@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.xliic</groupId>
     <artifactId>sonar-42crunch-plugin</artifactId>
-    <version>1.5</version>
+    <version>1.7</version>
 
     <packaging>sonar-plugin</packaging>
 
@@ -58,6 +58,7 @@
         <sonar.projectKey>42Crunch_sonarqube-plugin</sonar.projectKey>
         <sonar.organization>42crunch</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <xliic.settings.languages>all</xliic.settings.languages>
     </properties>
 
     <dependencies>
@@ -71,13 +72,13 @@
         <dependency>
             <groupId>com.xliic</groupId>
             <artifactId>cicd-core</artifactId>
-            <version>1.10-SNAPSHOT</version>
+            <version>1.10</version>
         </dependency>
 
         <dependency>
             <groupId>com.xliic</groupId>
             <artifactId>openapi-bundler-reverse</artifactId>
-            <version>1.2-SNAPSHOT</version>
+            <version>1.2</version>
         </dependency>
 
         <dependency>
@@ -100,6 +101,16 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources-filtered</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>

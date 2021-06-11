@@ -8,9 +8,12 @@ package com.xliic.sonar;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.xliic.cicd.audit.AuditException;
 import com.xliic.cicd.audit.Auditor;
@@ -36,27 +39,30 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 public class AuditSensor implements Sensor {
 
-    private static final Logger LOG = Loggers.get(AuditRulesDefinition.class);
+    private static final Logger LOG = Loggers.get(AuditSensor.class);
     private static final int MAX_BATCH_SIZE = 25;
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-        descriptor.name("REST API Static Security Testing").onlyOnLanguage(OpenApiLanguage.KEY);
+        descriptor.name("REST API Static Security Testing");
     }
 
     @Override
     public void execute(SensorContext context) {
-
         Optional<String> token = context.config().get(AuditPlugin.API_TOKEN_KEY);
         Optional<String> platformUrl = context.config().get(AuditPlugin.PLATFORM_URL);
         Optional<Boolean> disable = context.config().getBoolean(AuditPlugin.DISABLE);
+        List<String> inclusionPatterns = Arrays
+                .asList(context.config().getStringArray(OpenApiLanguage.FILE_SUFFIXES_KEY)).stream().map(ext -> {
+                    return String.format("**/*%s", ext);
+                }).collect(Collectors.toList());
+        String[] exclusionsPatterns = context.config().getStringArray(AuditPlugin.EXCLUSIONS_KEY);
 
         if (disable.isPresent() && disable.get()) {
             LOG.info("API Contract Security Audit is disabled");
@@ -72,10 +78,11 @@ public class AuditSensor implements Sensor {
         }
 
         FileSystem fs = context.fileSystem();
-        FilePredicate mainFilePredicate = fs.predicates().and(fs.predicates().hasType(InputFile.Type.MAIN),
-                fs.predicates().hasLanguage(OpenApiLanguage.KEY));
+        FilePredicate filesPredicate = fs.predicates().and(
+                fs.predicates().matchesPathPatterns(inclusionPatterns.toArray(new String[0])),
+                fs.predicates().doesNotMatchPathPatterns(exclusionsPatterns));
 
-        WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(mainFilePredicate));
+        WorkspaceImpl workspace = new WorkspaceImpl(context.fileSystem(), fs.inputFiles(filesPredicate));
         Iterator<InputFile> workspaceFiles = workspace.getInputFiles();
 
         try {
@@ -88,7 +95,6 @@ public class AuditSensor implements Sensor {
             e.printStackTrace();
             throw new AnalysisException("Unexpected exception", e);
         }
-
     }
 
     private ResultCollectorImpl audit(WorkspaceImpl workspace, FinderImpl finder, String platformUrl, SecretImpl apiKey)
@@ -120,7 +126,6 @@ public class AuditSensor implements Sensor {
         context.<Integer>newMeasure().withValue(score).forMetric(AuditMetrics.SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(security_score).forMetric(AuditMetrics.SECURITY_SCORE).on(file).save();
         context.<Integer>newMeasure().withValue(data_score).forMetric(AuditMetrics.DATA_SCORE).on(file).save();
-        context.<Integer>newMeasure().withValue(file.lines()).forMetric(CoreMetrics.NCLOC).on(file).save();
     }
 
     private void saveResults(SensorContext context, WorkspaceImpl workspace, ResultCollectorImpl results) {
@@ -163,18 +168,18 @@ public class AuditSensor implements Sensor {
 
     private Severity criticalityToSeverity(int criticality, Severity defaultSeverity) {
         switch (criticality) {
-        case 1:
-            return Severity.INFO;
-        case 2:
-            return Severity.MINOR;
-        case 3:
-            return Severity.MAJOR;
-        case 4:
-            return Severity.CRITICAL;
-        case 5:
-            return Severity.BLOCKER;
-        default:
-            return defaultSeverity;
+            case 1:
+                return Severity.INFO;
+            case 2:
+                return Severity.MINOR;
+            case 3:
+                return Severity.MAJOR;
+            case 4:
+                return Severity.CRITICAL;
+            case 5:
+                return Severity.BLOCKER;
+            default:
+                return defaultSeverity;
         }
     }
 
